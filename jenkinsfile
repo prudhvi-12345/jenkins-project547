@@ -1,0 +1,24 @@
+node(){
+    def buildNumber=BUILD_NUMBER
+    stage("git clonning"){
+      git 'https://github.com/MithunTechnologiesDevOps/java-web-app-docker.git'  
+    }
+    stage("build the war file"){
+        sh label: '', script: 'mvn package'
+    }
+    stage("docker images"){
+       sh label: '', script: 'docker build -t prudhvi2020/java-docker:2.0 .'
+    }
+    stage("docker login & push"){
+        withCredentials([string(credentialsId: 'docker_password', variable: 'docker_password')]) {
+ sh label: '', script: 'docker login -u prudhvi2020 -p ${docker_password}'
+}
+sh label: '', script: 'docker push prudhvi2020/java-docker:2.0'
+    }
+    stage("deployement"){
+        sshagent(['dev_server ssh']) {
+    sh label: '', script: 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.51.137 docker rm -f projectcontainer || true'
+    sh label: '', script: 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.51.137 docker run -d -p 8080:8080 --name projectcontainer prudhvi2020/java-docker:2.0'
+}
+}
+}
